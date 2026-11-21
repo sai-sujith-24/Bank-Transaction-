@@ -1,5 +1,6 @@
 
 import java.util.Scanner;
+import java.util.InputMismatchException;
 
 // Custom Exception 1
 class InvalidWithdrawalAmountException extends Exception {
@@ -36,6 +37,9 @@ class BankAccount {
                        double balance, double maxWithdrawalLimit) {
         this.accountNumber = accountNumber;
         this.holderName = holderName;
+        if (!Double.isFinite(balance) || balance < 0 || !Double.isFinite(maxWithdrawalLimit) || maxWithdrawalLimit <= 0) {
+            throw new IllegalArgumentException("Balance must be nonnegative and withdrawal limit must be positive and finite.");
+        }
         this.balance = balance;
         this.maxWithdrawalLimit = maxWithdrawalLimit;
     }
@@ -46,7 +50,7 @@ class BankAccount {
                    InsufficientBalanceException,
                    WithdrawalLimitExceededException {
 
-        if (amount <= 0) {
+        if (!Double.isFinite(amount) || amount <= 0) {
             throw new InvalidWithdrawalAmountException(
                 "Withdrawal amount must be greater than zero.");
         }
@@ -106,8 +110,14 @@ public class BankTransaction {
         System.out.print("Enter Maximum Withdrawal Limit: ");
         double limit = sc.nextDouble();
 
-        BankAccount account = new BankAccount(
-            accountNumber, holderName, balance, limit);
+        BankAccount account;
+        try {
+            account = new BankAccount(accountNumber, holderName, balance, limit);
+        } catch (IllegalArgumentException ex) {
+            System.out.println("Invalid account configuration: " + ex.getMessage());
+            sc.close();
+            return;
+        }
 
         int choice;
 
@@ -116,11 +126,25 @@ public class BankTransaction {
             System.out.println("1. Withdraw Money");
             System.out.println("2. Exit");
             System.out.print("Enter your choice: ");
-            choice = sc.nextInt();
+            try {
+                choice = sc.nextInt();
+            } catch (InputMismatchException ex) {
+                System.out.println("Please enter a number.");
+                sc.nextLine();
+                continue;
+            }
 
             if (choice == 1) {
                 System.out.print("Enter withdrawal amount: ");
-                double amount = sc.nextDouble();
+                double amount;
+                try {
+                    amount = sc.nextDouble();
+                } catch (InputMismatchException ex) {
+                    sc.nextLine();
+                    account.recordFailedTransaction();
+                    System.out.println("Transaction Failed: enter a numeric amount.");
+                    continue;
+                }
 
                 try {
                     account.withdraw(amount);
