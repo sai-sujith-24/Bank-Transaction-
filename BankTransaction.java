@@ -119,7 +119,7 @@ public class BankTransaction {
             return;
         }
 
-        int choice;
+        int choice = 0;
 
         do {
             System.out.println("\n===== BANK MENU =====");
